@@ -1,0 +1,42 @@
+15-462 Computer Graphics
+Project I
+
+Name: Bo Ning (bning)
+Date: 09/14/2014
+
+1. General Description
+In General, I have implemented and realized all the required functions and features in Project I. The build process, program functioning and visual output are generally proper. And the code organization and code comments were carefully paied attention to.
+
+2. Method Description
+(1) Program organizations
+To help my implementation, I declared and defined some private menber variables and helper functions.
+(a) Constants: I have defined the grid resolution of the heightmap, color/material parameters and light source location as constants for ease of modification
+(b) Variables: I have added some variables to store data for the mesh and heightmap, including:
+Vector3* meshVertexNorms; 
+real_t meshAngle; 
+Vector3 meshRotateVector; 
+unsigned int numHeightmapVertices; 
+Vector3* heightmapVertices; 
+unsigned int numHeightmapTriangles; 
+Triangle* heightmapTriangles; 
+Vector3* heightmapVertexNorms; 
+real_t heightmapAngle; 
+Vector3 heightmapRotateVector;
+(c) Helper functions: I have added two helper functions to help compute the norms of the mesh and heightmap:
+void computeNorms_mesh(unsigned int triangleInd);
+void computeNorms_heightmap(unsigned int triangleInd);
+
+(2) Initialize
+I applied dynamic memory allocation for the array varibles, and freed the memories in destroy() function.
+
+(3) Generating heightmap mesh
+I divide the heightmap plane to GRID_RESOLUTION*GRID_RESOLUTION squares and divide each square to two triangles, using these triangles to generate the vertices and triangles for the heighmap.
+
+(4) Computing norms
+In my implementation, I iterate over each triangle and compute its norm, after which I add this norm to all the vertices the triangle has. When this process is done, I normalize all the accumulative norms in each vertex. In this way, I can avoid determining which vertex is within which triangle, and thus improve the efficiency of the program.
+
+(3) Rendering
+I used Vertex Arrays method to draw the mesh, and specified the ambient/diffusion/spectaculation/shinness parameters of the mesh to gain good vusual output.
+
+3 Possible improvement
+Because I am not that familiar with C++, I may made some mistakes on memory allocation and free in the destroy() function, though no bugs appears in the whole process.

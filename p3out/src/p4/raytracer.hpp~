@@ -1,0 +1,161 @@
+/**
+ * @file raytacer.hpp
+ * @brief Raytracer class
+ */
+
+#ifndef _462_RAYTRACER_HPP_
+#define _462_RAYTRACER_HPP_
+
+#define MAX_DEPTH 5
+
+#define DIFF_REF 1
+#define NON_DIFF_REF 0
+#define SMALL_ANGLE 0.00001
+#define LIGHT_SAMPLE 80
+
+/* Modify these parameters to get different results */
+#define MAX_PHOTONS 1000
+#define C_SCALE 90
+#define G_SCALE 10
+#define R_SCALE 1
+#define NUM_NEIGHBORS 150
+
+
+
+#include "math/color.hpp"
+#include <algorithm>
+#include <vector>
+#include <queue>
+#include <functional>
+#include "scene/scene.hpp"
+
+
+namespace _462 {
+
+class Scene;
+class Ray;
+struct Intersection;
+struct Photon;
+
+class Raytracer
+{
+	typedef std::vector < int > IntVect;
+	typedef std::vector < Photon > PtList;
+
+public:
+
+	Raytracer();
+
+	~Raytracer();
+
+	bool initialize(Scene* scene, size_t num_samples,
+		size_t width, size_t height);
+
+	bool raytrace(unsigned char* buffer, real_t* max_time);
+
+private:
+
+	Color3 trace_pixel(const Scene* scene,
+		size_t x,
+		size_t y,
+		size_t width,
+		size_t height);
+
+	Color3 trace(const Ray& r, unsigned int depth);
+
+	Color3 direct_illumination(const Intersection& info);
+
+	Color3 refraction(const Ray& r, const Intersection* info,
+		const Color3& c, unsigned int depth);
+
+	// the scene to trace
+	Scene* scene;
+
+	// the dimensions of the image to trace
+	size_t width, height;
+
+	// the next row to raytrace
+	size_t current_row;
+
+	unsigned int num_samples;
+
+
+
+	// a list of all photons
+	PtList causticPhotonList;
+	PtList globalPhotonList;
+
+
+
+	/****************************************************************/
+	/*********************** Build K-D Tree *************************/
+	/****************************************************************/
+	// a list representing a k-d tree
+	IntVect causticTreeVect;
+	IntVect globalTreeVect;
+	// build the kd tree
+	bool buildKDTree(const PtList* photonListPtr, IntVect* treeVectPtr);
+	// recursively build the tree list
+	void kdTree(const PtList* photonListPtr,
+		IntVect* indexVectPtr, IntVect* treeVectPtr, 
+		const int axis, const int treeIndex);
+	// the comparison structure for sort
+	struct SortAxis {
+		SortAxis(const PtList* photonsPtr, const int ax)
+			: photonsPtr(photonsPtr), axis(ax) {};
+		const PtList* photonsPtr;
+		const int axis;
+		bool operator () (const int &ind1, const int &ind2) {
+			return (*photonsPtr)[ind1].pos[axis] < (*photonsPtr)[ind2].pos[axis];
+		}
+	};
+	
+
+	/****************************************************************/
+	/*********************** Kth nearest neighbors ******************/
+	/****************************************************************/
+	struct IDPair {
+		real_t distance;
+		int index;
+		IDPair(int ind, real_t dist) : distance(dist), index(ind) {}
+		bool operator<(const IDPair& p) const {
+			return distance < p.distance;
+		}
+	};
+	typedef std::vector < IDPair > IDPairVect;
+	// k nearest neighbor search
+	void knn(const PtList* photonListPtr, const IntVect* treeVectPtr, IDPairVect* nearestIndDistPairPtr, 
+		const Intersection* infoPtr);
+	// recursive search function
+	void search(const PtList* photonListPtr, 
+		const IntVect* treeVectPtr, const int currentTreeInd, 
+		IDPairVect* nearestIndDistPairPtr, const Intersection* infoPtr);
+
+
+
+	/****************************************************************/
+	/************************* Photon Tracing ***********************/
+	/****************************************************************/
+	// photon intersection stack
+	IntVect intersectStack;
+	// build the photon map for the scene
+	void setPhotonMap();
+	// recursively trace each 
+	void tracePhoton(const Ray& r, const unsigned int depth, const Color3& rayColor);
+	// add photon to specific photon list
+	inline void addPhoton(const Vector3& photonPos, 
+		const Vector3& photonDir, const Color3& photonColor);
+
+
+	/****************************************************************/
+	/************************* Compute Color ************************/
+	/****************************************************************/
+	inline Color3 getRadiance(const PtList* photonListPtr,
+		const IDPairVect* nearestIndDistPairPtr, 
+		const Intersection* infoPtr);
+
+};
+
+} /* _462 */
+
+#endif /* _462_RAYTRACER_HPP_ */

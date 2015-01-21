@@ -1,0 +1,84 @@
+15-462 Computer Graphics
+Project #3
+
+Name: Bo Ning (bning)
+Date: 10/28/2014 (1 day late)
+
+1. General Description
+
+Basically, I have implemented and roughtly realized the required functions and features in Project 3. The build process, program functioning and visual output are generally proper. And the code organization and code comments were carefully paied attention to. 
+
+The finished tasks includes: 
+(1) Handling of transformations
+(2) Ray tracing for opaque, transparent and reflective objects; 
+(3) Direct illumination, shadow rendering and light sampling;
+(4) Texture mapping and rendering
+(5) Screen shots
+
+There are some flaws within my implementation. One is related to the noisy points generated in ray tracing, which makes the visual output lack of quality. Another major issue is the low quality in ray-tracing the transparent geometries. Moreover, tracing speed is alse not ideal, which made me hard to render the toy scene and the dragon scene.
+
+
+2. Method Description
+
+(1) Geometry class/subclasses modifications
+
+An intersection structure is added in each subclass of Geometry to store necessary information when an interseciton happens.
+
+In order to specify the attributes and behaviors of different geometries. I have add more virtual functions inside the Geometry class to provide information of intersections, colors and locations, etc. These functions are:
+
+virtual bool checkIntersection(Ray ray) = 0: Check whether the given ray is intersected with the geometry.
+virtual real_t getIntersectionTime() = 0: Get the intersection time
+virtual Vector3 getIntersectionNormal() = 0: Get the normal at the intersection in Global Space
+virtual Vector3 getIntersectionPosition(Ray ray) = 0: Get the position of the intersection in Global Space
+virtual Color3 getIntersectionTextureColor(Ray ray) = 0: Get the texture color at the intersection position
+virtual Color3 getIntersectionAmbientColor() = 0: Get the ambient color at the intersection position
+virtual Color3 getIntersectionDiffuseColor() = 0: Get the diffuse color at the intersection position	
+virtual Color3 getIntersectionSpecularColor() = 0: Get the specular color at the intersection position
+virtual real_t getIntersectionRefIndex() = 0: Get the refractive index at the intersection position
+
+(2) More efficient ray-triangle intersection algorithm
+
+Instead of using the provided ray-triangle intersection algorithm, I applied Möller–Trumbore intersection algorithm in the triangle intersection test (see: http://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm). 
+
+(3) Expansion of Ray class
+
+I have add more variable inside the Ray class to record more information and states of the ray. The modified Ray class is like:
+
+Ray {
+    Vector3 e; -- Source
+    Vector3 d; -- Direction
+    unsigned int numOfBounce; -- Number of bounces happened
+    bool inAir; -- Whether the ray is in air
+    int geomIndex; -- Current geometry intersected with
+}
+
+In this way, more states are labeled and updated as the ray is tracing, and a stack storing the current refraction index can be avoided.
+
+(4) Helper functions
+
+A bounch of helper functions are added in my raytracer implementations to perform ray-scene interactions
+
+
+3 Results and Analysis
+
+The ray tracing algorithm turned out to be basically correct. The tracing performance is proper in the basic scenes and worked out in most of scenes. The major flaw lies in the noisy visual outputs. Possible cause of this problem may be a few amounts of errors happend in intersection tests. Currently I still have no idea what caused this error. Another major issue is the tracing speed of my algorithm. Since I was not able to apply any advanced data structure in my algorithm, the speed is not ideal. Therefore, I have failed to render the toy scene and the dragon scene.
+
+4 Extra Works
+I have applied a spherical bounding volume for the models in the scenes to increase the computation. The position and the radius of the bounding volume is computed in the initialize process of the Model class.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

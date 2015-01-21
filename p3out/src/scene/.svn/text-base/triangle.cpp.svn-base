@@ -1,0 +1,145 @@
+/**
+ * @file triangle.cpp
+ * @brief Function definitions for the Triangle class.
+ *
+ * @author Eric Butler (edbutler)
+ */
+
+#include "scene/triangle.hpp"
+#include "application/opengl.hpp"
+
+namespace _462 {
+
+Triangle::Triangle()
+{
+    vertices[0].material = 0;
+    vertices[1].material = 0;
+    vertices[2].material = 0;
+}
+
+Triangle::~Triangle() { }
+
+#ifdef SOL_OGL
+void Triangle::render() const
+{
+    bool materials_nonnull = true;
+    for ( int i = 0; i < 3; ++i )
+        materials_nonnull = materials_nonnull && vertices[i].material;
+
+    // TODO need to deal with this better. maybe a shader?
+    if ( materials_nonnull )
+        vertices[0].material->set_gl_state();
+
+    glBegin(GL_TRIANGLES);
+
+    glNormal3dv( &vertices[0].normal.x );
+    glTexCoord2dv( &vertices[0].tex_coord.x );
+    glVertex3dv( &vertices[0].position.x );
+
+    glNormal3dv( &vertices[1].normal.x );
+    glTexCoord2dv( &vertices[1].tex_coord.x );
+    glVertex3dv( &vertices[1].position.x);
+
+    glNormal3dv( &vertices[2].normal.x );
+    glTexCoord2dv( &vertices[2].tex_coord.x );
+    glVertex3dv( &vertices[2].position.x);
+
+    glEnd();
+
+    if ( materials_nonnull )
+        vertices[0].material->reset_gl_state();
+}
+#endif /* SOL_OGL */
+
+#ifdef SOLUTION
+void Triangle::precompute()
+{
+    Matrix4 transform;
+    Matrix3 normal_trans;
+    make_transformation_matrix( &transform, position, orientation, scale );
+    make_normal_matrix( &normal_trans, transform );
+
+    bounding_box.extent = BoundingBox3::EX_NULL;
+
+    for ( size_t i = 0; i < 3; ++i ) {
+        world_vertices[i].position = transform.transform_point( vertices[i].position );
+        world_vertices[i].normal = normalize( normal_trans * vertices[i].normal );
+        bounding_box.merge_with( world_vertices[i].position );
+    }
+}
+
+void Triangle::test_intersection( const Ray& ray, IntersectionResult* res ) const
+{
+    TriangleData tri;
+    tri.a = world_vertices[0].position;
+    tri.amb = tri.a - world_vertices[1].position;
+    tri.amc = tri.a - world_vertices[2].position;
+
+    if ( !triangle_intersect_test( ray, tri, res ) ) {
+        res->time = ray.maxt;
+    }
+}
+
+bool triangle_intersect_test( const Ray& ray, const TriangleData& tri, IntersectionResult* res )
+{
+    Vector3 a = tri.a;
+    Vector3 amb = tri.amb;
+    Vector3 amc = tri.amc;
+    Vector3 e = ray.base;
+    Vector3 d = ray.dir;
+
+    Vector3 ame = a-e;
+
+    real_t eimhf = amc.y*d.z - d.y*amc.z;
+    real_t gfmdi = d.x*amc.z - amc.x*d.z;
+    real_t dhmeg = amc.x*d.y - amc.y*d.x;
+
+    real_t M = amb.x*eimhf + amb.y*gfmdi + amb.z*dhmeg;
+
+    if ( M == 0.0 )
+        return false;
+
+    real_t Minv = 1.0 / M;
+
+    real_t akmjb = amb.x*ame.y - ame.x*amb.y;
+    real_t jcmal = ame.x*amb.z - amb.x*ame.z;
+    real_t blmkc = amb.y*ame.z - ame.y*amb.z;
+
+    real_t t = -( amc.z * akmjb + amc.y * jcmal + amc.x * blmkc ) * Minv;
+
+    if ( t < ray.mint || t >= ray.maxt )
+        return false;
+
+    real_t tmpgamma = ( d.z * akmjb + d.y * jcmal + d.x * blmkc ) * Minv;
+
+    if ( tmpgamma < 0 || tmpgamma > 1 )
+        return false;
+
+    real_t tmpbeta = ( ame.x*eimhf + ame.y*gfmdi + ame.z*dhmeg ) * Minv;
+
+    if ( tmpbeta < 0 || tmpbeta > 1 - tmpgamma )
+        return false;
+
+    res->beta = tmpbeta;
+    res->gamma = tmpgamma;
+    res->time = t;
+
+    return true;
+}
+
+#define INTERPOLATE_ARR(ident, mem, beta, gamma) \
+    (interpolate( ident[0].mem, ident[1].mem, ident[2].mem, beta, gamma))
+
+void Triangle::compute_color_data(
+    const Vector3& point, const IntersectionResult& res, GeometryColorData* data ) const
+{
+    data->normal = normalize( INTERPOLATE_ARR( world_vertices, normal, res.beta, res.gamma ) );
+    data->tex_coord = INTERPOLATE_ARR( vertices, tex_coord, res.beta, res.gamma );
+    for ( int i = 0; i < 3; i++ )
+        data->material[i] = vertices[i].material;
+    data->do_interpolate = vertices[0].material != vertices[1].material || vertices[0].material != vertices[2].material;
+}
+#endif /* SOLUTION */
+
+} /* _462 */
+

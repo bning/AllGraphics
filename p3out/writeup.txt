@@ -1,0 +1,105 @@
+15-462 Computer Graphics
+Project #4
+
+Name: Bo Ning (bning)
+Date: 11/20/2014 (1 day late)
+
+1. General Description
+
+Basically, I have implemented and realized the required functions and features in Project 4. The build process, program functioning and visual output are generally proper. And the code organization and code comments were carefully paied attention to. 
+
+The finished tasks includes: 
+(1) Defined photons for global and caustic photon maps
+(2) Traced photons with the procedures similar to ray tracing and stored absorbed photons
+(3) Implemented a k-d tree to store photon map
+(4) Implemented KNN algorithm to search and locate photons in photon maps
+(5) Optimized the algorithm to run with multiple threads (12) with OpenMP
+(5) Screen-shots
+
+2. Method Description
+
+(1) Photon definition
+The photon is defined as follows:
+	struct Photon
+	{
+		Vector3 pos;
+		Vector3 dir;
+		Color3 col;
+	};
+The photon is defined only with position, direction and color to same storage space. 
+
+(2) Photon Map build-up
+The caustic photon map and the global photon map are stored in private variables causticPhotonList and globalPhotonList of Raytracer Class respectively, with the data type std::vector < Photon >.
+
+The poton map build-up procedure is performed by the function Raytracer::setPhotonMap(args). This function calls a recursive function Raytracer::tracePhoton(args) to tracer and store photons in a way similar to ray tracing. 
+(a) Russian Roulette sampling is applied to decide the continuing of a photon. 
+(b) In photon tracing, in order to avoid storing the ray hitting the scene for the first time, when tracing each photon ray, a stack recording the passed procedured is maintained (push 1 if ray is from diffuse reflection and push 0 otherwise), and cleared after the photon ray disappears. 
+(c) The two situations of (1) p_s + p_d >=1 and (2) p_s + p_d < 1 are handled separately: if p_s + p_d < 1, the photon ray can continue with diffuse reflection, specular reflection and absorbing; On the other hand, if p_s + p_d >= 1, the photon ray can only be either diffuse-reflected or specular-reflected.
+
+(3) KD tree build-up
+The build-up of the kd tree is performed by Raytracer::buildKDTree(args), which calls a recursive function Raytracer::kdTree(args) to fill two empty vectors causticTreeVect and globalTreeVect. In order to save the storage and enhance the computing speed in knn search, the contents stored in the tree vectors are the indices of the photons in the phont lists.
+
+(4) KNN search
+The knn search procedure is performed by Raytracer::knn(args), which calls a recursive function Raytracer::search() to find the nearest neighbors. Note that the argumemts of the functions are all pointers to the photon lists and tree vectors so as to enhance the efficiency and speed of searching.
+
+(5) Parallel programming
+My implementation has applied OpenMP to make the ray tracing and knn search process parallel. In order to avoid data race, I have incoporated my knn search and photon computation inside the ray tracing process. 
+
+3 Results and analyses
+(1)The visual outputs are generally proper regarding all the provided scenes. The limitation in number of photons reduces the effects of photons. Therefore, in order to get a better output, I have muliplied the raytracing component, the caustic component and the global component by a certain scaler. 
+
+(2) Note that this project is based on the previous ray tracing project. My ray tracing program is not working perfectly from last time, so I continued this project on the code provided by the TA. The cristal sphere in the cornell_box.scene does not show perfectly with some noises with the provided code. I just ignored this issue.
+
+
+4 Extra Works
+No listed extra works done. Optimaize the program to parallel running.
+
+5 Parameters
+
+All scenes are moved to scenes/
+
+Parameters for the program are defined as MACROs in raytracer.hpp. To get the results, you need to modify these parameters.
+
+#define MAX_PHOTONS 100000    // Number of photons to emmit
+#define C_SCALE 60            // Scaler of caustic component
+#define G_SCALE 30            // Scaler of global component
+#define R_SCALE 0.6           // Scaler of ray tracing component
+#define NUM_NEIGHBORS 150     // Number of nearest neighbors
+
+The parameters of the results shown in screenshots are:
+
+(1) cornell_box
+#define MAX_PHOTONS 100000    
+#define C_SCALE 90            
+#define G_SCALE 10            
+#define R_SCALE 1           
+#define NUM_NEIGHBORS 150    
+
+(2) cornell_box_cubes
+#define MAX_PHOTONS 100000    
+#define C_SCALE 80            
+#define G_SCALE 40            
+#define R_SCALE 1          
+#define NUM_NEIGHBORS 150    
+
+(3) cylinder
+#define MAX_PHOTONS 100000    
+#define C_SCALE 60         
+#define G_SCALE 30            
+#define R_SCALE 0.6           
+#define NUM_NEIGHBORS 150    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

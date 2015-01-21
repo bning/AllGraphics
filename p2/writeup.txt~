@@ -1,0 +1,53 @@
+15-462 Computer Graphics
+Project #2
+
+Name: Bo Ning (bning)
+Date: 10/04/2014
+
+1. General Description
+In General, I have implemented and realized all the required functions and features in Project 2. The build process, program functioning and visual output are generally proper. And the code organization and code comments were carefully paied attention to.
+
+2. Method Description
+(1) Shader
+The shader part of the project is relatively streightforward. I have referred the contents at 
+http://en.wikibooks.org/wiki/Cg_Programming/Unity/Reflecting_Surfaces 
+for implementing my cubemap reflection shader part, and the implementation is in the file "shaders/material_frag.glsl". 
+
+For my own shaders, I have implemented two shaders, which are in (1) "shaders/my_shader_1_vert.glsl" and "shaders/my_shader_1_frag.glsl" and (2) "shaders/my_shader_2_vert.glsl" and "shaders/my_shader_2_frag.glsl" respectively.
+
+(i) my_shader_1: In this shader, I have realized a mixture of three effects and formed a dynamically changing shading of the objects. The first factor influencing the shading is the model view of the object, so changing the orientaion and location of the object will result in changing of colors. The second factor is the orientation of the object towards the camera direction, which forms a shinning effect to the object. Finally, the third factor is the cubemap surrounding the object
+
+(ii) my_shader_2: In this shader, I have implemented a shading scheme that reflecting the light source from the camera direction, which forms an effect of brigntness changin along the surfaces
+
+(2) Loop Subdivision
+The general idea of my subdivision algorithm is based on an adjacency matrix to indicate the relationship between edges and vertices. By storing information onto each entry of the adjacency matrix we can get complex relations between the vertices, triangles and edges.
+
+For implementation convenience, I have done the following modifications to the original data structures:
+Varialbes:
+(a) std::vector < unsigned int > adjacentTriangles: added to the MeshVertex struct to store the triangle indices that each vertex is contained in.
+(b) A default constructor is add to the MeshVertex struct for clearer initialization.
+(c) A struct MeshEdge is added, in which three variables are declared:
+	std::vector < unsigned int > adjacentTriangles: store the triangle indices that each edge is contained in.
+	int newVertexInd: the index of the odd vertex of each edge in the vertices list
+	bool isInterior: a flag indicating whether the edge is interior or not
+	A default constructor
+(d) typedef std::vector< std::vector < MeshEdge > > MeshEdgeAdjacencyMatrix: An adjacency matrix data type of size vertices.size()*vertices.size() with each elment a MeshEdge
+(e) MeshEdgeAdjacencyMatrix edgeMatrix: The adjacency matrix
+(f) numEdges: The number of edges in the mesh
+Methods:
+// Compute the new vertex on the given edge, push back the vertex to vertices list, and return the index of the new vertex in vertices
+(a) int getNewVertexIndex(unsigned int edgeRow, unsigned int edgeCol);
+// Update the positions of the even vertices
+(b) Vector3 computeNewEvenVertexPosition(unsigned int vertexIndex);
+// Compute the positions of the Interior vertices
+(c) Vector3 computeInteriorVertex(unsigned int vetexIndex);
+// Compute the positions of the Boundary vertices
+(d) Vector3 computeBoundartVertex(unsigned int vertexIndex, std::vector < unsigned int > linkedBoundPointsInd);
+
+By applying the adjacency matrix data structure, we can directly query the specific edge by given two vertices, and them with the information stored in elements of the matrix (the adjacent triangles, interior edge or not, etc.), we can easily get what we need to compute the new vertices, the new edges and update the triangle lists. This data structure turned out to be VERY time and computation saving, although it is also very memory consuming. 
+
+3 Possible improvement
+The adjacency matrix based algorithm is very fast, but it is also VERY memory consuming. Several of the model can be only divided for 3 to 4 times and the memory is used up. It is clear that a huge matrix is stored in the memory and increases exponentially with time. However, the size and information storing technique can be optimized greatly. On one hand, the matrix is symmetic, which make a half of the information is redundant; On the other hand, when new edges are generated, the old edges will never be queried and thus useless, but it is still occupying the entries of the matrix. These parts can be optimize for better performance.
+
+4 Extra work
+I have implemented TWO extra shaders, see at (1) "shaders/my_shader_1_vert.glsl" and "shaders/my_shader_1_frag.glsl" and (2) "shaders/my_shader_2_vert.glsl" and "shaders/my_shader_2_frag.glsl"

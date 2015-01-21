@@ -1,0 +1,48 @@
+/**
+ * @file model.hpp
+ * @brief Model class
+ *
+ * @author Eric Butler (edbutler)
+ */
+
+#ifndef _462_SCENE_MODEL_HPP_
+#define _462_SCENE_MODEL_HPP_
+
+#include "scene/scene.hpp"
+#include "scene/mesh.hpp"
+
+namespace _462 {
+
+/**
+ * A mesh of triangles.
+ */
+class Model : public Geometry
+{
+public:
+
+    const Mesh* mesh;
+    const Material* material;
+
+    Model();
+    virtual ~Model();
+#ifdef SOL_OGL
+
+    virtual void render() const;
+#endif /* SOL_OGL */
+#ifdef SOLUTION
+    Matrix4 inv_trans;
+    Matrix3 normal_mat;
+
+    virtual void precompute();
+    virtual void test_intersection( const Ray& ray, IntersectionResult* res ) const;
+    virtual void compute_color_data(
+        const Vector3& point, const IntersectionResult& res, GeometryColorData* data ) const;
+#endif /* SOLUTION */
+
+};
+
+
+} /* _462 */
+
+#endif /* _462_SCENE_MODEL_HPP_ */
+

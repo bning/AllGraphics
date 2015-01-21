@@ -1,0 +1,106 @@
+/**
+ * @file model.cpp
+ * @brief Model class
+ *
+ * @author Eric Butler (edbutler)
+ * @author Zeyang Li (zeyangl)
+ */
+
+#include "scene/model.hpp"
+#include "scene/material.hpp"
+#include <GL/gl.h>
+#include <iostream>
+#include <cstring>
+#include <string>
+#include <fstream>
+#include <sstream>
+
+#ifdef SOLUTION
+#include "scene/triangle.hpp"
+#endif /* SOLUTION */
+
+namespace _462 {
+
+Model::Model() : mesh( 0 ), material( 0 ) { }
+Model::~Model() { }
+
+#ifdef SOL_OGL
+void Model::render() const
+{
+    if ( !mesh )
+        return;
+    if ( material )
+        material->set_gl_state();
+    mesh->render();
+    if ( material )
+        material->reset_gl_state();
+}
+#endif /* SOL_OGL */
+
+#ifdef SOLUTION
+void Model::precompute()
+{
+    Matrix4 trans;
+    make_inverse_transformation_matrix( &inv_trans, position, orientation, scale );
+    make_transformation_matrix( &trans, position, orientation, scale );
+    make_normal_matrix( &normal_mat, trans );
+
+    const MeshVertex* vlist = mesh->get_vertices();
+    bounding_box.extent = BoundingBox3::EX_NULL;
+    for ( size_t i = 0; i < mesh->num_vertices(); ++i )
+        bounding_box.merge_with( trans.transform_point( vlist[i].position ) );
+}
+
+void Model::test_intersection( const Ray& cray, IntersectionResult* res ) const
+{
+    assert( mesh );
+    size_t size = mesh->num_triangles();
+
+    const MeshVertex* vlist = mesh->get_vertices();
+    const MeshTriangle* tlist = mesh->get_triangles();
+
+    Ray ray = cray;
+    ray.base = inv_trans.transform_point( ray.base );
+    ray.dir = inv_trans.transform_vector( ray.dir );
+    TriangleData tri;
+    res->time = ray.maxt;
+
+    for ( size_t i = 0; i < size; ++i ) {
+        const MeshTriangle& mtri = tlist[i];
+        tri.a = vlist[mtri.vertices[0]].position;
+        tri.amb = tri.a - vlist[mtri.vertices[1]].position;
+        tri.amc = tri.a - vlist[mtri.vertices[2]].position;
+
+        if ( triangle_intersect_test( ray, tri, res ) ) {
+            ray.maxt = res->time;
+            res->index = i;
+        }
+    }
+}
+
+void Model::compute_color_data(
+    const Vector3& point, const IntersectionResult& res, GeometryColorData* data ) const
+{
+    assert( mesh );
+    assert( 0 <= res.index && res.index < mesh->num_triangles() );
+    const MeshVertex* vlist = mesh->get_vertices();
+    const MeshTriangle& mtri = mesh->get_triangles()[res.index];
+
+    data->normal = normalize( interpolate(
+        normalize( normal_mat * vlist[mtri.vertices[0]].normal ),
+        normalize( normal_mat * vlist[mtri.vertices[1]].normal ),
+        normalize( normal_mat * vlist[mtri.vertices[2]].normal ),
+        res.beta, res.gamma ) );
+    data->tex_coord = interpolate(
+        vlist[mtri.vertices[0]].tex_coord,
+        vlist[mtri.vertices[1]].tex_coord,
+        vlist[mtri.vertices[2]].tex_coord,
+        res.beta, res.gamma );
+
+    data->material[0] = material;
+    data->do_interpolate = false;
+}
+#endif /* SOLUTION */
+
+} /* _462 */
+

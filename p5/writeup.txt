@@ -1,0 +1,57 @@
+15-662 Computer Graphics
+Project #5 Physics Engine
+
+Name: Bo Ning (bning)
+Date: 12/04/2014
+
+1. General Description
+In General, I have implemented and realized all the required functions and features in Project 4. The build process, program functioning and visual output are generally proper. And the code organization and code comments were carefully paied attention to.
+
+
+2. Method Description
+(1) Collistion test
+(a) Sphere/Sphere collision
+    The collision test between two spheres is achieved by the following process:
+    -> check relative velocity direction: if going apart, return false
+    -> check distance: if less than radii addition, return true
+    -> update sphere velocity: if less than some value, set to zero
+(b) Sphere/Triangle collision
+    The collision test between a sphere and a triangle is achieved by the following process:  
+    -> check relative velocity direction: if going apart, return false
+    -> get the nearest point inside the triangle to the sphere center
+    -> check distance between the nearest point and the sphere center: if less than radii addition, return true
+    -> update sphere velocity: if less than some value, set to zero
+(c) Sphere/Plane collision
+    The collision test between a sphere and a plane is achieved by the following process:
+    -> check relative velocity direction: if going apart, return false
+    -> check distance: if less than radius of sphere, return true
+    -> update sphere velocity: if less than some value, set to zero
+
+(2) Spring simulation
+The states of the springs are modified in the Spring::step(dt) function. The changes in both position and orientation of the two bodies are taken into consideration regarding the force and torque change by the springs
+
+(3) State update
+The state update is performed in Physics::step(dt) function. Three integration methods are implemented (Eular, Leap frog and RK4). In order to record the intermediant states of spheres, I have added variables inside the Spherebody Class
+    // for position
+    Vector3 x[4]; 	// Intermediant positions
+    Vector3 v[4]; 	// Intermediant velocities
+    Vector3 a[4]; 	// Intermediant accelerations
+    // for orientation
+    Quaternion q[4];    // Intermediant orientations
+    Vector3 omega[4];   // Intermediant angular velocities
+    Vector3 alpha[4];   // Intermediant angular accelerations
+
+
+3. Issues
+The visual output of the rotation_test scene is different to the reference. This is probabily caused by the difference in coordinate difination.
+
+
+4 Extra work
+I have implemented TWO extra Integration methods to update the states: Eular method and Leap frog method
+
+NOTE: 
+To test different integration methods, see the macro MODE in physics.hpp and modify it to apply different methods
+ * MODE 0: Eular
+ * MODE 1: Leap Frog
+ * MODE 2: RK4 (required) 
+

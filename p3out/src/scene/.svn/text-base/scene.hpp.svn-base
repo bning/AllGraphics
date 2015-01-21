@@ -1,0 +1,191 @@
+/**
+ * @file scene.hpp
+ * @brief Class definitions for scenes.
+ *
+ * @author Eric Butler (edbutler)
+ * @author Kristin Siu (kasiu)
+ */
+
+#ifndef _462_SCENE_SCENE_HPP_
+#define _462_SCENE_SCENE_HPP_
+
+#include "math/vector.hpp"
+#include "math/quaternion.hpp"
+#include "math/matrix.hpp"
+#include "math/box.hpp"
+#include "math/camera.hpp"
+#include "scene/material.hpp"
+#include "scene/mesh.hpp"
+#include <string>
+#include <vector>
+
+namespace _462 {
+
+#ifdef SOLUTION
+
+struct IntersectionResult
+{
+    Vector3 position;
+    real_t time;
+    real_t beta, gamma;
+    size_t index;
+};
+
+struct GeometryColorData
+{
+    // normal at this point
+    Vector3 normal;
+    // texture coordinate at this point
+    Vector2 tex_coord;
+    // the materials at this point
+    const Material* material[3];
+    // if true, materials are interpolated, else only first material is used
+    bool do_interpolate;
+};
+#endif /* SOLUTION */
+
+class Geometry
+{
+public:
+    Geometry();
+    virtual ~Geometry();
+
+    /*
+       World transformation are applied in the following order:
+       1. Scale
+       2. Orientation
+       3. Position
+    */
+
+    // The world position of the object.
+    Vector3 position;
+
+    // The world orientation of the object.
+    // Use Quaternion::to_matrix to get the rotation matrix.
+    Quaternion orientation;
+
+    // The world scale of the object.
+    Vector3 scale;
+
+#ifdef SOL_OGL
+    /**
+     * Renders this geometry using OpenGL in the local coordinate space.
+     */
+    virtual void render() const = 0;
+#endif /* SOL_OGL */
+#ifdef SOLUTION
+    BoundingBox3 bounding_box;
+
+    /**
+     * Do any precomputation possible for intersection tests and color
+     * computation, including computation of the bounding box.
+     */
+    virtual void precompute() = 0;
+
+    /**
+     * Performs a narrow-phase intersection test on this geometry.
+     * The results of the test are stored in res. If the geometry is not
+     * intersected, res->time should be set to a value strictly outside the
+     * time bounds of the ray, such as ray.maxt.
+     */
+    virtual void test_intersection( const Ray& ray, IntersectionResult* res ) const = 0;
+
+    /**
+     * Computes color data for the geometry, given its intersection results.
+     */
+    virtual void compute_color_data(
+        const Vector3& point, const IntersectionResult& res, GeometryColorData* data ) const = 0;
+#endif /* SOLUTION */
+};
+
+
+struct PointLight
+{
+    struct Attenuation
+    {
+        real_t constant;
+        real_t linear;
+        real_t quadratic;
+    };
+
+    PointLight();
+
+    // The position of the light, relative to world origin.
+    Vector3 position;
+    // The color of the light (both diffuse and specular)
+    Color3 color;
+    // attenuation
+    Attenuation attenuation;
+};
+
+/**
+ * The container class for information used to render a scene composed of
+ * Geometries.
+ */
+class Scene
+{
+public:
+
+    /// the camera
+    Camera camera;
+    /// the background color
+    Color3 background_color;
+    /// the amibient light of the scene
+    Color3 ambient_light;
+    /// the refraction index of air
+    real_t refractive_index;
+
+    /// Creates a new empty scene.
+    Scene();
+
+    /// Destroys this scene. Invokes delete on everything in geometries.
+    ~Scene();
+
+    // accessor functions
+    Geometry* const* get_geometries() const;
+    size_t num_geometries() const;
+    const PointLight* get_lights() const;
+    size_t num_lights() const;
+    Material* const* get_materials() const;
+    size_t num_materials() const;
+    Mesh* const* get_meshes() const;
+    size_t num_meshes() const;
+
+    /// Clears the scene, and invokes delete on everything in geometries.
+    void reset();
+
+    // functions to add things to the scene
+    // all pointers are deleted by the scene upon scene deconstruction.
+    void add_geometry( Geometry* g );
+    void add_material( Material* m );
+    void add_mesh( Mesh* m );
+    void add_light( const PointLight& l );
+
+private:
+
+    typedef std::vector< PointLight > PointLightList;
+    typedef std::vector< Material* > MaterialList;
+    typedef std::vector< Mesh* > MeshList;
+    typedef std::vector< Geometry* > GeometryList;
+
+    // list of all lights in the scene
+    PointLightList point_lights;
+    // all materials used by geometries
+    MaterialList materials;
+    // all meshes used by models
+    MeshList meshes;
+    // list of all geometries. deleted in dctor, so should be allocated on heap.
+    GeometryList geometries;
+
+private:
+
+    // no meaningful assignment or copy
+    Scene(const Scene&);
+    Scene& operator=(const Scene&);
+
+};
+
+} /* _462 */
+
+#endif /* _462_SCENE_SCENE_HPP_ */
+
